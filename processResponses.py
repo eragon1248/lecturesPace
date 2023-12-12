@@ -16,7 +16,7 @@ pdf_path = 'CS376_Lecture_7.pdf'
 images = convert_from_path(pdf_path)
 
 # Load the JSON file
-with open('responses1.json', 'r', encoding='utf-8') as file:
+with open('responsesShort.json', 'r', encoding='utf-8') as file:
     data = json.load(file)
 
 # Directory to save intermediate files
