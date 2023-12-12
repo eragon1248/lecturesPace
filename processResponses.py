@@ -6,6 +6,7 @@ from pdf2image import convert_from_path
 import shutil
 from pydub import AudioSegment
 from pydub.playback import play
+import shutil
 
 
 # Load the PDF file
@@ -15,7 +16,7 @@ pdf_path = 'CS376_Lecture_7.pdf'
 images = convert_from_path(pdf_path)
 
 # Load the JSON file
-with open('responses.json', 'r', encoding='utf-8') as file:
+with open('responses1.json', 'r', encoding='utf-8') as file:
     data = json.load(file)
 
 # Directory to save intermediate files
@@ -38,13 +39,13 @@ for i, response in enumerate(data):
     audio_file = f'temp_files/slide_{slide_number}.mp3'
     tts.save(audio_file)
 
-    # Speed up by 1.5x
+    # Speed up
     audio = AudioSegment.from_file(audio_file)
     fast_audio = audio.speedup(playback_speed=1.5)
 
     # Save the output
-    fast_audio.export("{audio}_fast.mp3", format="mp3")
     audio_file = f'temp_files/slide_{slide_number}_fast.mp3'
+    fast_audio.export(audio_file, format="mp3")
 
     # Save the image to a file
     image_path = f'temp_files/slide_{slide_number}.png'
@@ -58,7 +59,7 @@ for i, response in enumerate(data):
 # Create a file listing all the individual video files
 with open('temp_files/file_list.txt', 'w') as file:
     for slide_number in range(1, len(data) + 1):
-        file.write(f"file 'temp_files/slide_{slide_number}_video.mp4'\n")
+        file.write(f"file 'slide_{slide_number}_video.mp4'\n")
 
 # Combine all the video files into one final video
 final_video_file = 'final_video.mp4'
