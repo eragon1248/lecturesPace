@@ -28,6 +28,9 @@ num_pages = pdf_file.getNumPages()
 # Initialize a list to store responses
 responses = []
 
+# Parameters for the API
+seconds_per_slide = 30
+
 # Loop through each page
 for page in range(num_pages):
     # Convert the page to an image
@@ -54,7 +57,7 @@ for page in range(num_pages):
                     "content": [
                         {
                             "type": "text",
-                            "text": "Can you explain the content of this slide as if you were teaching a class? Jump straight into the content and don't worry about introducing the topic."
+                            "text": f"Can you explain the content of this slide as if you were teaching a class? Jump straight into the content and don't worry about introducing the topic. The output is intended to be used as a script for a video lecture throught Text To Speech with approximately {seconds_per_slide} seconds per slide, so don't include any special characters and such that will be read unnaturally."
                         },
                         {
                             "type": "image_url",

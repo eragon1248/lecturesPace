@@ -16,7 +16,7 @@ pdf_path = 'CS376_Lecture_7.pdf'
 images = convert_from_path(pdf_path)
 
 # Load the JSON file
-with open('responsesShort.json', 'r', encoding='utf-8') as file:
+with open('responses.json', 'r', encoding='utf-8') as file:
     data = json.load(file)
 
 # Directory to save intermediate files
@@ -40,12 +40,12 @@ for i, response in enumerate(data):
     tts.save(audio_file)
 
     # Speed up
-    audio = AudioSegment.from_file(audio_file)
-    fast_audio = audio.speedup(playback_speed=1.5)
+    #audio = AudioSegment.from_file(audio_file)
+    #fast_audio = audio.speedup(playback_speed=1.5)
 
     # Save the output
-    audio_file = f'temp_files/slide_{slide_number}_fast.mp3'
-    fast_audio.export(audio_file, format="mp3")
+    #audio_file = f'temp_files/slide_{slide_number}_fast.mp3'
+    #fast_audio.export(audio_file, format="mp3")
 
     # Save the image to a file
     image_path = f'temp_files/slide_{slide_number}.png'
