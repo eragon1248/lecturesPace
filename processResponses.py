@@ -8,7 +8,7 @@ import shutil
 
 # API Parameters
 filename = "CS376_Lecture_7.pdf"
-speedup = 1.5
+speedup = 1.7
 
 # Check if the directory exists and create it if it does not
 if not os.path.exists('temp_files'):
@@ -25,7 +25,7 @@ for i, image in enumerate(images):
     image_files.append(image_file)
 
 # Load the JSON file
-with open("responsesShort.json", "r", encoding="utf-8") as file:
+with open("responses.json", "r", encoding="utf-8") as file:
     data = json.load(file)
 
 
