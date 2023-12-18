@@ -5,3 +5,4 @@ types-requests
 python-dotenv
 gtts
 pydub
+ffmpeg-python

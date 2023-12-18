@@ -1,71 +1,110 @@
 import json
-import os
 from gtts import gTTS
-import subprocess
 from pdf2image import convert_from_path
-import shutil
-from pydub import AudioSegment
-from pydub.playback import play
+import os
+import subprocess
+from datetime import timedelta
 import shutil
 
+# API Parameters
+filename = "CS376_Lecture_7.pdf"
+speedup = 1.5
 
-# Load the PDF file
-pdf_path = 'CS376_Lecture_7.pdf'
+# Check if the directory exists and create it if it does not
+if not os.path.exists('temp_files'):
+    os.makedirs('temp_files')
 
 # Convert the PDF to a list of images
-images = convert_from_path(pdf_path)
+images = convert_from_path(filename)
+
+# Save the images to files
+image_files = []
+for i, image in enumerate(images):
+    image_file = f'temp_files/slide_{i + 1}.png'
+    image.save(image_file, 'PNG')
+    image_files.append(image_file)
 
 # Load the JSON file
-with open('responses.json', 'r', encoding='utf-8') as file:
+with open("responsesShort.json", "r", encoding="utf-8") as file:
     data = json.load(file)
 
-# Directory to save intermediate files
-os.makedirs('temp_files', exist_ok=True)
 
-# Process each slide and create individual video files
+def format_srt_time(timedelta_obj):
+    """Convert a timedelta object into a string in SRT timestamp format."""
+    total_seconds = int(timedelta_obj.total_seconds())
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    milliseconds = timedelta_obj.microseconds // 1000
+    return f"{hours:02}:{minutes:02}:{seconds:02},{milliseconds:03}"
+
+# Initialize a list to store the video clips
+clips = []
+
 for i, response in enumerate(data):
     slide_number = i + 1
-   
-    # Get the slide number
-    print('Working on slide', slide_number, '...')
 
-    # Extract the content from the response
-    content = response.get('choices', [{}])[0].get('message', {}).get('content', '')
+    # Extract the content from the response and remove newine
+    content = response.get("choices", [{}])[0].get("message", {}).get("content", "")
+    content = content.replace('\n', ' ')  # Replace newline characters with spaces
+    
+    # Split the content into sentences
+    sentences = [sentence.strip() for sentence in content.split('.') if sentence.strip()]
 
-    # Convert the content to speech
-    tts = gTTS(text=content, lang='en')
+    # Convert each sentence to speech and create a text clip for each sentence
+    audio_files = []
+    subtitles = []
+    total_duration = timedelta()
+    for j, sentence in enumerate(sentences):
+        # Convert the sentence to speech
+        tts = gTTS(text=sentence, lang="en")
+        audio_file = f'temp_files/slide_{slide_number}_sentence_{j + 1}.mp3'
+        tts.save(audio_file)
 
-    # Save the speech to an audio file
-    audio_file = f'temp_files/slide_{slide_number}.mp3'
-    tts.save(audio_file)
+        # Speed up the audio
+        fast_audio_file = f'temp_files/slide_{slide_number}_sentence_{j + 1}_fast.mp3'
+        subprocess.call(['ffmpeg', '-i', audio_file, '-filter:a', f'atempo={speedup}', fast_audio_file])
 
-    # Speed up
-    #audio = AudioSegment.from_file(audio_file)
-    #fast_audio = audio.speedup(playback_speed=1.5)
+        # Get the duration of the audio file
+        result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', fast_audio_file], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        duration = timedelta(seconds=float(result.stdout))
 
-    # Save the output
-    #audio_file = f'temp_files/slide_{slide_number}_fast.mp3'
-    #fast_audio.export(audio_file, format="mp3")
+        # Add the subtitle
+        start_time = format_srt_time(total_duration)
+        end_time = format_srt_time(total_duration + duration)
+        subtitles.append(f"{j + 1}\n{start_time} --> {end_time}\n{sentence}\n\n")
 
-    # Save the image to a file
-    image_path = f'temp_files/slide_{slide_number}.png'
-    images[i].save(image_path, 'PNG')
+        total_duration += duration
+        audio_files.append(fast_audio_file)
 
-    # Combine slide image with audio using FFmpeg
+    # Write the subtitles to a .srt file
+    with open(f'temp_files/slide_{slide_number}.srt', 'w', encoding='utf-8') as f:
+        f.writelines(subtitles)
+
+    # Create a text file listing all the audio files
+    with open('temp_files/concat_list.txt', 'w') as f:
+        for audio_file in audio_files:
+            # Remove the 'temp_files/' prefix from the filename
+            filename = audio_file.replace('temp_files/', '')
+            f.write(f"file '{filename}'\n")
+
+    # Concatenate all audio files into a single audio file
+    final_audio_file = f'temp_files/slide_{slide_number}_final.mp3'
+    subprocess.call(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'temp_files/concat_list.txt', '-acodec', 'copy', final_audio_file])
+
+    # Create a video clip from the image and audio
     video_file = f'temp_files/slide_{slide_number}_video.mp4'
-    command = f'ffmpeg -loop 1 -i {image_path} -i {audio_file} -c:v libx264 -tune stillimage -c:a aac -b:a 192k -pix_fmt yuv420p -shortest {video_file}'
-    subprocess.run(command, shell=True)
+    subprocess.call(['ffmpeg', '-loop', '1', '-i', image_files[i], '-i', final_audio_file, '-c:v', 'libx264', '-tune', 'stillimage', '-c:a', 'aac', '-b:a', '192k', '-pix_fmt', 'yuv420p', '-shortest', video_file])
 
-# Create a file listing all the individual video files
-with open('temp_files/file_list.txt', 'w') as file:
-    for slide_number in range(1, len(data) + 1):
-        file.write(f"file 'slide_{slide_number}_video.mp4'\n")
+    # Add subtitles to the video
+    subtitled_video_file = f'temp_files/slide_{slide_number}_subtitled.mp4'
+    subtitle_file = f'temp_files/slide_{slide_number}.srt'
+    subprocess.call(['ffmpeg', '-i', video_file, '-vf', f'subtitles={subtitle_file}', subtitled_video_file])
 
-# Combine all the video files into one final video
-final_video_file = 'final_video.mp4'
-command = f'ffmpeg -f concat -safe 0 -i temp_files/file_list.txt -c copy {final_video_file}'
-subprocess.run(command, shell=True)
+    clips.append(subtitled_video_file)
+
+# Concatenate all video clips into a single video
+final_video_file = "final_video.mp4"
+subprocess.call(['ffmpeg', '-i', 'concat:' + '|'.join(clips), '-c', 'copy', final_video_file])
 
 # Delete the temp_files directory
 shutil.rmtree('temp_files')
-
