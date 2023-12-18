@@ -27,7 +27,7 @@ for i, image in enumerate(images):
 # Load the JSON file
 with open("responses.json", "r", encoding="utf-8") as file:
     data = json.load(file)
-
+    
 
 def format_srt_time(timedelta_obj):
     """Convert a timedelta object into a string in SRT timestamp format."""

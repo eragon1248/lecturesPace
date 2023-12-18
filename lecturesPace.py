@@ -84,7 +84,7 @@ for page in range(num_pages):
 
         # Get the response from the API and store it
         responses.append(response.json())
-        previous_response = response.json()['choices'][0]['text']
+        previous_response = response.json()['choices'][0]['message']['content']
         print(previous_response)
     except Exception as e:
         print(f"An error occurred: {e}")
