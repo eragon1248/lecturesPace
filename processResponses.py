@@ -5,6 +5,7 @@ import os
 import subprocess
 from datetime import timedelta
 import shutil
+import re
 
 # API Parameters
 filename = "CS376_Lecture_7.pdf"
@@ -48,7 +49,8 @@ for i, response in enumerate(data):
     content = content.replace('\n', ' ')  # Replace newline characters with spaces
     
     # Split the content into sentences
-    sentences = [sentence.strip() for sentence in content.split('.') if sentence.strip()]
+    sentences = re.split(r'(?<=[.!?])\s+', content)
+    print (sentences)
 
     # Convert each sentence to speech and create a text clip for each sentence
     audio_files = []
@@ -102,9 +104,16 @@ for i, response in enumerate(data):
 
     clips.append(subtitled_video_file)
 
+# Create a text file listing all the video clips
+with open('temp_files/concat_list.txt', 'w') as f:
+    for clip in clips:
+        # Remove the 'temp_files/' prefix from the filename
+        filename = clip.replace('temp_files/', '')
+        f.write(f"file '{filename}'\n")
+
 # Concatenate all video clips into a single video
 final_video_file = "final_video.mp4"
-subprocess.call(['ffmpeg', '-i', 'concat:' + '|'.join(clips), '-c', 'copy', final_video_file])
+subprocess.call(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'temp_files/concat_list.txt', '-c', 'copy', final_video_file])
 
 # Delete the temp_files directory
-shutil.rmtree('temp_files')
+#hutil.rmtree('temp_files')
