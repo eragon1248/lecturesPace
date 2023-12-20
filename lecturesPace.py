@@ -15,7 +15,7 @@ api_key = os.getenv("OPENAI_API_KEY")
 # Parameters for the API
 elaboration = 'concise'
 filename = "CS376_Lecture_7-pages-1.pdf"
-lecture_title = "CS376 Lecture 7"
+lecture_title = "Lecture 7: Hough Transform"
 
 
 # Function to encode image
@@ -33,7 +33,7 @@ num_pages = pdf_file.getNumPages()
 responses = []
 
 # Initialize the previous response
-previous_response = ''
+previous_response = '(This is the first slide)'
 
 # Loop through each page
 for page in range(num_pages):
@@ -63,7 +63,13 @@ for page in range(num_pages):
                     "content": [
                         {
                             "type": "text",
-                            "text": f"Can you explain the content of this slide as if you were conducting a lecture? Jump straight into the content and don't worry about introducing the topic. The output is intended to be used as a script for a video lecture of title {lecture_title} through Text To Speech and is intended to be {elaboration}. don't include any special characters and such that will be read unnaturally. This is page {page+1} so have or exclude intros accordingly. Be sure to analyze whether the content is a title slide or a content slide and adjust response length accordingly. This is the response from the previous slide for context/transition: {previous_response}",
+                            "text" : f'''Can you explain the content of this slide as if you were conducting a lecture? 
+                            Jump straight into the content and don't worry about introducing the topic. 
+                            The output is intended to be passed through Text To Speech as page {page + 1} of a lecture titled {lecture_title}.
+                            The explanation is intended to be {elaboration}. 
+                            Don't include any special characters and such that will be read unnaturally by gTTS. 
+                            If this is a Title slide, simply read out the title.
+                            This is the response from the previous slide for context/transition: {previous_response}'''
                         },
                         {
                             "type": "image_url",
@@ -85,9 +91,11 @@ for page in range(num_pages):
         # Get the response from the API and store it
         responses.append(response.json())
         previous_response = response.json()['choices'][0]['message']['content']
-        print(previous_response)
+        print( f'Page {page + 1}: {previous_response}\n\n')
+
     except Exception as e:
         print(f"An error occurred: {e}")
+
     finally:
         # Delete the temporary image file
         os.remove(image_path)
