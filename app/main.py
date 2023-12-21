@@ -67,7 +67,7 @@ async def create_upload_file(background_tasks: BackgroundTasks, lecture_data_jso
     
     try:
         # Validate and convert the uploaded file to PDF
-        await validate_and_convert_file(file_dir, lecture_file)
+        await validate_and_convert_file(file_dir, lecture_file, tempo, conciseness)
         
         # Generate the script and slides for the lecture
         script = await getScript(file_dir, lecture_title, conciseness)
