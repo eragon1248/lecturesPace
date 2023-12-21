@@ -11,3 +11,4 @@ pydantic
 uvicorn
 docx2pdf
 ppt2pdf
+python-multipart
