@@ -49,3 +49,4 @@ async def validate_and_convert_file(pdf_path: str, file: UploadFile):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="PDF file must not be more than 50 pages",
             )
+        reader.stream.close()  # Close the PdfFileReader object

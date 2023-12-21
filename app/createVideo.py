@@ -1,25 +1,11 @@
-import json
 from gtts import gTTS
 from pdf2image import convert_from_path
-import os
 import subprocess
 from datetime import timedelta
-import shutil
 import re
 
 
-def createVideo(file_dir: str, video_path: str, script, speedup: float):
-
-    # Convert the PDF to a list of images
-    images = convert_from_path(file_dir)
-
-    # Save the images to files
-    image_files = []
-    for i, image in enumerate(images):
-        image_file = f'temp_files/slide_{i + 1}.png'
-        image.save(image_file, 'PNG')
-        image_files.append(image_file)
-        
+async def createVideo(video_path: str, script, speedup: float, subtitle: bool):        
 
     def format_srt_time(timedelta_obj):
         """Convert a timedelta object into a string in SRT timestamp format."""
@@ -85,14 +71,17 @@ def createVideo(file_dir: str, video_path: str, script, speedup: float):
 
         # Create a video clip from the image and audio
         video_file = f'temp_files/slide_{slide_number}_video.mp4'
-        subprocess.call(['ffmpeg', '-loop', '1', '-i', image_files[i], '-i', final_audio_file, '-c:v', 'libx264', '-tune', 'stillimage', '-c:a', 'aac', '-b:a', '192k', '-pix_fmt', 'yuv420p', '-shortest', video_file])
+        subprocess.call(['ffmpeg', '-loop', '1', '-i', f'temp_files/slide_{slide_number}.png', '-i', final_audio_file, '-c:v', 'libx264', '-tune', 'stillimage', '-c:a', 'aac', '-b:a', '192k', '-pix_fmt', 'yuv420p', '-shortest', video_file])
 
-        # Add subtitles to the video
-        subtitled_video_file = f'temp_files/slide_{slide_number}_subtitled.mp4'
-        subtitle_file = f'temp_files/slide_{slide_number}.srt'
-        subprocess.call(['ffmpeg', '-i', video_file, '-vf', f'subtitles={subtitle_file}', subtitled_video_file])
+        if subtitle:
+            # Add subtitles to the video
+            subtitled_video_file = f'temp_files/slide_{slide_number}_subtitled.mp4'
+            subtitle_file = f'temp_files/slide_{slide_number}.srt'
+            subprocess.call(['ffmpeg', '-i', video_file, '-vf', f'subtitles={subtitle_file}', subtitled_video_file])
 
-        clips.append(subtitled_video_file)
+            clips.append(subtitled_video_file)
+        else:
+            clips.append(video_file)
 
     # Create a text file listing all the video clips
     with open('temp_files/concat_list.txt', 'w') as f:

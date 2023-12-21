@@ -1,5 +1,6 @@
 import os
-from fastapi import FastAPI, Form, UploadFile, File, HTTPException
+import uvicorn
+from fastapi import FastAPI, Form, UploadFile, File, HTTPException, BackgroundTasks
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ValidationError
@@ -8,6 +9,7 @@ from app.createVideo import createVideo
 from app.getScript import getScript
 import shutil
 import json
+from typing import Optional
 
 app = FastAPI()
 
@@ -21,24 +23,26 @@ app.add_middleware(
 )
 
 class LectureCreate(BaseModel):
-    lecture_title: str
+    lecture_title: Optional[str] = None
     conciseness: str
     tempo: float
     subtitle: bool = True
 
 @app.post("/createVideo", response_class=FileResponse)
-async def create_upload_file(lecture_data_json: str = Form(...), lecture_file: UploadFile = File(...)):
+async def create_upload_file(background_tasks: BackgroundTasks, lecture_data_json: str = Form(...), lecture_file: UploadFile = File(...)):
     """
         The project create a video presentation from a lecture document (<50 pages). The uploaded files can be in PDF, 
-        Word, or PowerPoint format. Input the parameters as a json string in the lecture_data_json field. The parameters are as follows:\n
+        Word, or PowerPoint format. Input the parameters as a json string in the lecture_data_json field. The parameters are as follows:
 
-        - **file**: An UploadFile object representing the uploaded file. This file can be a PDF, a Word document, or a PowerPoint presentation. The file size must be between 1 and 5 MB.\n
-
-        - **lecture_title**: A string representing the title of the lecture for context purposes.
+        - **file**: An UploadFile object representing the uploaded file. This file can be a PDF, a Word document, or a PowerPoint presentation. The file size must be between 1 and 5 MB.
+        
+        - **lecture_title**: A string representing the title of the lecture for context purposes. The default value is None.
 
         - **conciseness**: A string representing the level of conciseness of the lecture. The options are "concise", "medium", and "verbose".
 
         - **tempo**: A float representing the speed of the video. The options are 0.5, 0.75, 1.0, 1.25, and 1.5, 1.75, and 2.
+
+        - **subtitle**: A boolean representing whether subtitles should be included in the video. The default value is True.
 
         Example parameter input: {"lecture_title": "Introduction to Python", "conciseness": "concise", "tempo": 1.5}
     """
@@ -51,30 +55,31 @@ async def create_upload_file(lecture_data_json: str = Form(...), lecture_file: U
         lecture_title = params["lecture_title"]
         conciseness = params["conciseness"]
         tempo = params["tempo"]
+        subtitle = params["subtitle"]
     except (json.JSONDecodeError, ValidationError):
         raise HTTPException(status_code=400, detail="Invalid item data")
     
     
     temp_dir = "temp_files"
     file_dir = os.path.join(temp_dir, "converted.pdf")
-    video_file = os.path.join(temp_dir, "lecture_video.mp4")
+    video_file = os.path.join(temp_dir, "final_video.mp4")
     os.makedirs(temp_dir, exist_ok=True)
     
     try:
         # Validate and convert the uploaded file to PDF
         await validate_and_convert_file(file_dir, lecture_file)
         
-        # Generate the script for the lecture
-        script = getScript(file_dir, lecture_title, conciseness)
+        # Generate the script and slides for the lecture
+        script = await getScript(file_dir, lecture_title, conciseness)
         
-        # Perform video creation using the generated script and tempo
-        createVideo(file_dir, video_file, script, tempo)
-        
-        # Move the video file to the temp_files directory
-        shutil.move(video_file, os.path.join(temp_dir, video_file))
-        
+        # Stitch sped up video clips together and add subtitles
+        await createVideo(video_file, script, tempo, subtitle)
+                
         # Return the video file as a response
-        return FileResponse(os.path.join(temp_dir, video_file), media_type="video/mp4")
+        return FileResponse(video_file, media_type="video/mp4", filename='final_video.mp4')
     finally:
-        # Remove the temp_files directory and its contents
-        shutil.rmtree(temp_dir, ignore_errors=True)
+        # Schedule the deletion of the temp_files directory and its contents
+        background_tasks.add_task(shutil.rmtree, temp_dir, ignore_errors=True)
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
