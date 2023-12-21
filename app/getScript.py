@@ -85,8 +85,8 @@ def getScript(filename: str, lecture_title: str, elaboration: str):
             )
 
             # Get the response from the API and store it
-            responses.append(response.json())
             previous_response = response.json()['choices'][0]['message']['content']
+            responses.append(previous_response)
             print( f'Page {page + 1}: {previous_response}\n\n')
 
         except Exception as e:

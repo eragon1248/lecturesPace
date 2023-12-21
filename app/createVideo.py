@@ -8,14 +8,14 @@ import shutil
 import re
 
 
-def createVideo(filename: str, speedup: float):
+def createVideo(file_dir: str, video_path: str, script, speedup: float):
     
     # Check if the directory exists and create it if it does not
     if not os.path.exists('temp_files'):
         os.makedirs('temp_files')
 
     # Convert the PDF to a list of images
-    images = convert_from_path(filename)
+    images = convert_from_path(file_dir)
 
     # Save the images to files
     image_files = []
@@ -23,10 +23,6 @@ def createVideo(filename: str, speedup: float):
         image_file = f'temp_files/slide_{i + 1}.png'
         image.save(image_file, 'PNG')
         image_files.append(image_file)
-
-    # Load the JSON file
-    with open("responses.json", "r", encoding="utf-8") as file:
-        data = json.load(file)
         
 
     def format_srt_time(timedelta_obj):
@@ -40,12 +36,11 @@ def createVideo(filename: str, speedup: float):
     # Initialize a list to store the video clips
     clips = []
 
-    for i, response in enumerate(data):
+    for i, response in enumerate(script):
         slide_number = i + 1
 
         # Extract the content from the response and remove newine
-        content = response.get("choices", [{}])[0].get("message", {}).get("content", "")
-        content = content.replace('\n', ' ')  # Replace newline characters with spaces
+        content = response.replace('\n', ' ')  # Replace newline characters with spaces
         
         # Split the content into sentences
         sentences = re.split(r'(?<=[.!?])\s+', content)
@@ -111,8 +106,7 @@ def createVideo(filename: str, speedup: float):
             f.write(f"file '{filename}'\n")
 
     # Concatenate all video clips into a single video
-    final_video_file = "final_video.mp4"
-    subprocess.call(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'temp_files/concat_list.txt', '-c', 'copy', final_video_file])
+    subprocess.call(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'temp_files/concat_list.txt', '-c', 'copy', video_path])
 
     # Delete the temp_files directory
     shutil.rmtree('temp_files')
