@@ -5,7 +5,7 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 from pydantic import BaseModel
-from utils import validate_and_convert_file
+from app.validate import validate_and_convert_file
 from createVideo import createVideo
 from getScript import getScript
 import shutil
@@ -31,7 +31,20 @@ class LectureCreate(BaseModel):
 
 @app.post("/createVideo", response_model=FileResponse, summary=
           """
-            Create Video
+            The project create a video presentation from a lecture document (<50 pages). The uploaded files can be in PDF, 
+            Word, or PowerPoint format.
+
+            
+            Input Parameters:
+
+            file: An UploadFile object representing the uploaded file. This file can be a PDF, a Word document, or a PowerPoint presentation.
+            The file size must be between 1 and 5 MB.
+
+            lecture_title: A string representing the title of the lecture for context purposes.
+
+            conciseness: A string representing the level of conciseness of the lecture. The options are "concise", "medium", and "verbose".
+
+            tempo: A float representing the speed of the video. The options are 0.5, 0.75, 1.0, 1.25, and 1.5, 1.75, and 2.
           """)
 async def create_upload_file(lecture_data: LectureCreate):
     file = lecture_data.file

@@ -9,10 +9,6 @@ import re
 
 
 def createVideo(file_dir: str, video_path: str, script, speedup: float):
-    
-    # Check if the directory exists and create it if it does not
-    if not os.path.exists('temp_files'):
-        os.makedirs('temp_files')
 
     # Convert the PDF to a list of images
     images = convert_from_path(file_dir)
@@ -107,6 +103,3 @@ def createVideo(file_dir: str, video_path: str, script, speedup: float):
 
     # Concatenate all video clips into a single video
     subprocess.call(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'temp_files/concat_list.txt', '-c', 'copy', video_path])
-
-    # Delete the temp_files directory
-    shutil.rmtree('temp_files')

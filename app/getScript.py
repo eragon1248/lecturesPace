@@ -39,7 +39,7 @@ def getScript(filename: str, lecture_title: str, elaboration: str):
         )
 
         # Save the image to a file
-        image_path = f"page_{page+1}.png"
+        image_path = f"temp_files/page_{page+1}.png"
         images[0].save(image_path, "PNG")
 
         try:
