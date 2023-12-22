@@ -31,10 +31,11 @@ class LectureCreate(BaseModel):
 @app.post("/createVideo", response_class=FileResponse)
 async def create_upload_file(background_tasks: BackgroundTasks, lecture_data_json: str = Form(...), lecture_file: UploadFile = File(...)):
     """
-        The project create a video presentation from a lecture document (<50 pages). The uploaded files can be in PDF, 
-        Word, or PowerPoint format. Input the parameters as a json string in the lecture_data_json field. The parameters are as follows:
+        This project creates a video presentation from a lecture document by repeatedly querying ChatGPT's vision API to generate a 
+        lecture script in conjunction with gTTS and FFmpeg to automate video creation. Input the parameters as a json string in the 
+        lecture_data_json field. The parameters are as follows:
 
-        - **file**: An UploadFile object representing the uploaded file. This file can be a PDF, a Word document, or a PowerPoint presentation. The file size must be between 1 and 5 MB.
+        - **file**: An UploadFile object representing the uploaded file. This file can be a PDF, a Word document, or a PowerPoint presentation and up to 50 pages. The file size must be between 1 and 5 MB.
         
         - **lecture_title**: A string representing the title of the lecture for context purposes. The default value is None.
 
