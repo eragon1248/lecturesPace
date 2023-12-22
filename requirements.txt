@@ -10,5 +10,5 @@ fastapi
 pydantic
 uvicorn
 docx2pdf
-ppt2pdf
+pptxtopdf
 python-multipart

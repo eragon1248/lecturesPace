@@ -1,8 +1,10 @@
 from fastapi import HTTPException, status, UploadFile
 from docx2pdf import convert as docx2pdf
+from pptxtopdf import convert as pptxtopdf
 from PyPDF2 import PdfFileReader
 import os
 import subprocess
+
 
 # Define the allowed values for tempo and conciseness
 allowed_tempos = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2]
@@ -54,8 +56,9 @@ async def validate_and_convert_file(pdf_path: str, file: UploadFile, tempo: floa
     elif file_mime_type == "application/vnd.openxmlformats-officedocument.presentationml.presentation":
         with open("temp_files/temp.pptx", "wb") as temp_file:
             temp_file.write(contents)
-        subprocess.run(["ppt2pdf", "file", pdf_path], check=True)
+        pptxtopdf("temp_files", "temp_files")
         os.remove("temp_files/temp.pptx")
+        os.rename("temp_files/temp.pdf", pdf_path)
     
     # If the file is already a PDF
     else:  
